@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  icon     String    @default("🍺")
+  color    String    @default("#6366f1")
+  products Product[]
+}
+
+model Product {
+  id           String        @id @default(cuid())
+  name         String
+  price        Float
+  d6Price      Float?
+  volume       Float?
+  packSize     Int?
+  packType     String?
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id])
+  purchases    Purchase[]
+  wheelOptions WheelOption[]
+  isActive     Boolean       @default(true)
+  showInMenu   Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([isActive])
+}
+
+model WheelOption {
+  id        String   @id @default(cuid())
+  label     String
+  emoji     String   @default("🎯")
+  color     String   @default("#8b5cf6")
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  weight    Int      @default(1)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([order, createdAt])
+}
+
+model Purchase {
+  id          String   @id @default(cuid())
+  personName  String
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  quantity    Int      @default(1)
+  totalCost   Float
+  note        String?
+  paidBy      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt(sort: Desc)])
+  @@index([personName])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  payer     String
+  recipient String
+  amount    Float
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Person {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String
+  imageData String?
+  isD6      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
