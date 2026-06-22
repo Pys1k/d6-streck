@@ -45,7 +45,7 @@ export default function LoginPage() {
             <Shield className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Admin Login</h1>
-          <p className="text-muted-foreground mt-1">Admninpanel :p</p>
+          <p className="text-muted-foreground mt-1">Adminpanel :p</p>
         </div>
 
         <form onSubmit={handleSubmit} className="glass rounded-2xl p-6 space-y-4">
