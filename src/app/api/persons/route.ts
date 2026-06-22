@@ -2,17 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { randomColor } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const persons = await prisma.person.findMany({ orderBy: { name: "asc" } });
+    const [persons, counts] = await Promise.all([
+      prisma.person.findMany({ orderBy: { name: "asc" } }),
+      prisma.purchase.groupBy({ by: ["personName"], _count: { _all: true } }),
+    ]);
+    const countMap = new Map(counts.map((c) => [c.personName, c._count._all]));
+    const withCounts = persons.map((p) => ({ ...p, purchaseCount: countMap.get(p.name) ?? 0 }));
     if (!session) {
-      return NextResponse.json(persons.map(({ isD6: _, ...p }) => p));
+      return NextResponse.json(withCounts.map(({ isD6: _, ...p }) => p));
     }
-    return NextResponse.json(persons);
+    return NextResponse.json(withCounts);
   } catch {
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
@@ -32,17 +38,4 @@ export async function POST(req: NextRequest) {
     const msg = e instanceof Error && e.message.includes("Unique") ? "Namnet finns redan" : "Failed";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
-}
-
-function randomColor(): string {
-  const h = Math.floor(Math.random() * 360);
-  const s = 65, l = 55;
-  const sl = s / 100, ll = l / 100;
-  const a = sl * Math.min(ll, 1 - ll);
-  const f = (n: number) => {
-    const k = (n + h / 30) % 12;
-    const c = ll - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * c).toString(16).padStart(2, "0");
-  };
-  return `#${f(0)}${f(8)}${f(4)}`;
 }

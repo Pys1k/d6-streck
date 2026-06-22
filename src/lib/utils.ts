@@ -23,3 +23,17 @@ export function formatDate(date: Date | string): string {
   }).format(new Date(date));
 }
 
+// Random hex color with fixed saturation/lightness, random hue
+export function randomColor(): string {
+  const h = Math.floor(Math.random() * 360);
+  const s = 70, l = 58;
+  const sl = s / 100, ll = l / 100;
+  const a = sl * Math.min(ll, 1 - ll);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const c = ll - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * c).toString(16).padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+

@@ -7,7 +7,7 @@ import {
   LogOut, Package, ShoppingCart, BarChart2, Plus, Trash2,
   X, Check, Loader2, AlertTriangle, Settings2, Pencil, Users, Eye, EyeOff
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, randomColor } from "@/lib/utils";
 
 function WheelIcon({ className }: { className?: string }) {
   return (
@@ -61,6 +61,7 @@ interface Person {
   color: string;
   imageData?: string | null;
   isD6: boolean;
+  purchaseCount: number;
 }
 
 type AdminTab = "products" | "purchases" | "categories" | "persons" | "wheel" | "settings";
@@ -421,7 +422,15 @@ export default function AdminPage() {
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
-                  {deleteConfirm === c.id ? (
+                  {c._count.products > 0 ? (
+                    <button
+                      disabled
+                      title="Kategorin har produkter – flytta eller ta bort dem först"
+                      className="p-2 rounded-lg text-muted-foreground/30 cursor-not-allowed"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  ) : deleteConfirm === c.id ? (
                     <span className="text-xs text-red-400 flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3" />
                       Ta bort?
@@ -491,7 +500,7 @@ export default function AdminPage() {
                         {deleteConfirm === p.id ? (
                           <span className="text-xs text-red-400 flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3" />
-                            Ta bort?
+                            {p.purchaseCount > 0 ? `Ta bort + ${p.purchaseCount} köp?` : "Ta bort?"}
                             <button onClick={() => deletePerson(p.id)} className="ml-1 font-bold">Ja</button>
                             <button onClick={() => setDeleteConfirm(null)} className="text-muted-foreground">Nej</button>
                           </span>
@@ -844,19 +853,6 @@ function PurchaseEditForm({
       </div>
     </form>
   );
-}
-
-function randomColor(): string { //detta suger så hårt - Mugg
-  const h = Math.floor(Math.random() * 360);
-  const s = 70, l = 58;
-  const sl = s / 100, ll = l / 100;
-  const a = sl * Math.min(ll, 1 - ll);
-  const f = (n: number) => {
-    const k = (n + h / 30) % 12;
-    const c = ll - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * c).toString(16).padStart(2, "0");
-  };
-  return `#${f(0)}${f(8)}${f(4)}`;
 }
 
 function CategoryForm({

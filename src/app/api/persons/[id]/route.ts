@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// data-URL string length cap (~3 MB of image after base64 decoding)
+const MAX_IMAGE_CHARS = 4_000_000;
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,8 +22,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     if (body.imageData !== undefined) {
-      if (body.imageData !== null && !String(body.imageData).startsWith("data:image/")) {
-        return NextResponse.json({ error: "Invalid image" }, { status: 400 });
+      if (body.imageData !== null) {
+        const img = String(body.imageData);
+        if (!img.startsWith("data:image/")) {
+          return NextResponse.json({ error: "Invalid image" }, { status: 400 });
+        }
+        if (img.length > MAX_IMAGE_CHARS) {
+          return NextResponse.json({ error: "Bilden är för stor (max ~3 MB)" }, { status: 400 });
+        }
       }
       data.imageData = body.imageData;
     }
@@ -81,7 +90,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const { id } = await params;
-    await prisma.person.delete({ where: { id } });
+    const person = await prisma.person.findUnique({ where: { id } });
+    if (!person) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // purchases reference the name, not an FK — remove them along with the person
+    await prisma.$transaction([
+      prisma.purchase.deleteMany({ where: { personName: person.name } }),
+      prisma.person.delete({ where: { id } }),
+    ]);
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Failed" }, { status: 500 });

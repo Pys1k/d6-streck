@@ -34,6 +34,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const { id } = await params;
+    const productCount = await prisma.product.count({ where: { categoryId: id } });
+    if (productCount > 0) {
+      return NextResponse.json(
+        { error: "Kategorin har produkter – flytta eller ta bort dem först" },
+        { status: 400 }
+      );
+    }
     await prisma.category.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {
