@@ -82,6 +82,7 @@ export default function AdminPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [clearDebtConfirm, setClearDebtConfirm] = useState<string | null>(null);
   const [purchasesTotal, setPurchasesTotal] = useState(0);
   const [purchasesPage, setPurchasesPage] = useState(1);
   const [purchasesLoadingMore, setPurchasesLoadingMore] = useState(false);
@@ -164,6 +165,15 @@ export default function AdminPage() {
       fetch("/api/stats?fresh=1").catch(() => {});
     }
     setDeleteConfirm(null);
+  }
+
+  async function clearPersonDebt(id: string) {
+    const res = await fetch(`/api/persons/${id}/reset-debts`, { method: "POST" });
+    if (res.ok) {
+      await fetchAll();
+      fetch("/api/stats?fresh=1").catch(() => {});
+    }
+    setClearDebtConfirm(null);
   }
 
   function toggleD6(id: string, isD6: boolean) {
@@ -492,11 +502,32 @@ export default function AdminPage() {
                           D6
                         </button>
                         <button
-                          onClick={() => { setEditingPerson(p); setDeleteConfirm(null); }}
+                          onClick={() => { setEditingPerson(p); setDeleteConfirm(null); setClearDebtConfirm(null); }}
                           className="p-2 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
+                        {clearDebtConfirm === p.id ? (
+                          <span className="text-xs text-amber-400 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" />
+                            {p.purchaseCount > 0 ? `Nollställ ${p.purchaseCount} köp?` : "Nollställ?"}
+                            <button onClick={() => clearPersonDebt(p.id)} className="ml-1 font-bold">Ja</button>
+                            <button onClick={() => setClearDebtConfirm(null)} className="text-muted-foreground">Nej</button>
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => { setClearDebtConfirm(p.id); setDeleteConfirm(null); }}
+                            disabled={p.purchaseCount === 0}
+                            title={p.purchaseCount > 0 ? "Rensa alla skulder för denna person" : "Ingen skuld att rensa"}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+                              p.purchaseCount > 0
+                                ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
+                                : "bg-white/5 text-white/20 cursor-not-allowed"
+                            }`}
+                          >
+                            Rensa skulder
+                          </button>
+                        )}
                         {deleteConfirm === p.id ? (
                           <span className="text-xs text-red-400 flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3" />
@@ -506,7 +537,7 @@ export default function AdminPage() {
                           </span>
                         ) : (
                           <button
-                            onClick={() => setDeleteConfirm(p.id)}
+                            onClick={() => { setDeleteConfirm(p.id); setClearDebtConfirm(null); }}
                             className="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
