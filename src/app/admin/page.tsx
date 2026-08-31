@@ -607,13 +607,19 @@ function SKSettings() {
     e.preventDefault();
     setSaving(true);
     setSaved(false);
-    await fetch("/api/settings", {
+    const payload = { sk_name: name, sk_swish: swish };
+    const res = await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sk_name: name, sk_swish: swish }),
+      body: JSON.stringify(payload),
     });
+    if (res.ok) {
+      try {
+        localStorage.setItem("d6_sk", JSON.stringify(payload));
+      } catch {}
+    }
     setSaving(false);
-    setSaved(true);
+    setSaved(res.ok);
     setTimeout(() => setSaved(false), 2500);
   }
 

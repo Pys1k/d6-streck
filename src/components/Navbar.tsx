@@ -29,11 +29,17 @@ export function Navbar() {
     fetch("/api/settings")
       .then((r) => r.json())
       .then((data) => {
-        setSk(data);
-        try { localStorage.setItem("d6_sk", JSON.stringify(data)); } catch {}
+        const next = {
+          sk_name: typeof data?.sk_name === "string" ? data.sk_name : "",
+          sk_swish: typeof data?.sk_swish === "string" ? data.sk_swish : "",
+        };
+        setSk(next);
+        try { localStorage.setItem("d6_sk", JSON.stringify(next)); } catch {}
       })
       .catch(() => {});
   }, []);
+
+  const swishHref = sk ? swishUrl(sk.sk_swish) : undefined;
 
   return (
     <nav className="sticky top-0 z-40 glass border-b border-white/5 px-4 py-3">
@@ -46,20 +52,29 @@ export function Navbar() {
 
         {}
         {sk && (sk.sk_name || sk.sk_swish) && (
-          <a
-            href={swishUrl(sk.sk_swish)}
-            title="Swisha SK"
-            className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl bg-green-500/10 border border-green-500/25 hover:bg-green-500/20 hover:border-green-500/40 transition-all duration-200"
-            style={{ boxShadow: "0 0 12px rgba(34,197,94,0.15)" }}
-          >
-            <span className="text-[10px] font-bold uppercase tracking-widest text-green-500/70">Swisha SK</span>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-green-300 leading-none">{sk.sk_name || "—"}</span>
-              {sk.sk_swish && (
-                <span className="hidden sm:block text-xs font-mono text-green-400/80 leading-none">{sk.sk_swish}</span>
-              )}
+          swishHref ? (
+            <a
+              href={swishHref}
+              title="Swisha SK"
+              className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl bg-green-500/10 border border-green-500/25 hover:bg-green-500/20 hover:border-green-500/40 transition-all duration-200"
+              style={{ boxShadow: "0 0 12px rgba(34,197,94,0.15)" }}
+            >
+              <span className="text-[10px] font-bold uppercase tracking-widest text-green-500/70">Swisha SK</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-green-300 leading-none">{sk.sk_name || "—"}</span>
+                {sk.sk_swish && (
+                  <span className="hidden sm:block text-xs font-mono text-green-400/80 leading-none">{sk.sk_swish}</span>
+                )}
+              </div>
+            </a>
+          ) : (
+            <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl bg-green-500/10 border border-green-500/25 opacity-80">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-green-500/70">Swisha SK</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-green-300 leading-none">{sk.sk_name || "—"}</span>
+              </div>
             </div>
-          </a>
+          )
         )}
 
         {/* admin */}

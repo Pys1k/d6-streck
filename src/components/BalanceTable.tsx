@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { PersonAvatar } from "./PersonAvatar";
 
 interface Purchase {
@@ -148,6 +148,9 @@ export function BalanceTable({
                                   <span className="text-muted-foreground mr-1">{p.quantity}×</span>
                                 )}
                                 {p.product.name}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground">
+                                {formatDate(p.createdAt)}
                               </div>
                               {p.note && (
                                 <div className="text-xs text-muted-foreground truncate">{p.note}</div>
