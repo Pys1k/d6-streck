@@ -1,30 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-
-let settingsCache: { data: { sk_name: string; sk_swish: string }; ts: number } | null = null;
-const SETTINGS_TTL = 5 * 60_000;
+export const revalidate = 0;
 
 export async function GET() {
-  if (settingsCache && Date.now() - settingsCache.ts < SETTINGS_TTL) {
-    return NextResponse.json(settingsCache.data, {
-      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
-    });
-  }
   try {
     const settings = await prisma.setting.findMany();
     const map: Record<string, string> = {};
     for (const s of settings) map[s.key] = s.value;
     const data = { sk_name: map.sk_name ?? "", sk_swish: map.sk_swish ?? "" };
-    settingsCache = { data, ts: Date.now() };
     return NextResponse.json(data, {
-      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+      headers: { "Cache-Control": "no-store" },
     });
   } catch {
-    return NextResponse.json({ sk_name: "", sk_swish: "" });
+    return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 });
   }
 }
 
@@ -34,7 +27,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const updates: Promise<unknown>[] = [];
+    const updates: Prisma.PrismaPromise<unknown>[] = [];
 
     if (typeof body.sk_name === "string") {
       updates.push(
@@ -54,10 +47,18 @@ export async function PATCH(req: NextRequest) {
         })
       );
     }
-
-    await Promise.all(updates);
-    settingsCache = null;
-    return NextResponse.json({ success: true });
+    await prisma.$transaction(updates);
+    await prisma.$transaction(updates);
+    const settings = await prisma.setting.findMany({
+      where: { key: { in: ["sk_name", "sk_swish"] } },
+    });
+    const map: Record<string, string> = {};
+    for (const setting of settings) map[setting.key] = setting.value;
+    return NextResponse.json({
+      success: true,
+      sk_name: map.sk_name ?? "",
+      sk_swish: map.sk_swish ?? "",
+    });
   } catch {
     return NextResponse.json({ error: "Failed to update settings" }, { status: 500 });
   }

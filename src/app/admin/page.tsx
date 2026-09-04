@@ -597,9 +597,14 @@ function SKSettings() {
   }
 
   useEffect(() => {
-    fetch("/api/settings")
+    fetch("/api/settings", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => { setName(d.sk_name ?? ""); setSwish(d.sk_swish ?? ""); setLoading(false); })
+      .then((d) => {
+        if (typeof d.error === "string") throw new Error(d.error);
+        setName(d.sk_name ?? "");
+        setSwish(d.sk_swish ?? "");
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
 
@@ -614,8 +619,14 @@ function SKSettings() {
       body: JSON.stringify(payload),
     });
     if (res.ok) {
+      const savedSettings = await res.json();
+      setName(savedSettings.sk_name);
+      setSwish(savedSettings.sk_swish);
       try {
-        localStorage.setItem("d6_sk", JSON.stringify(payload));
+        localStorage.setItem("d6_sk", JSON.stringify({
+          sk_name: savedSettings.sk_name,
+          sk_swish: savedSettings.sk_swish,
+        }));
       } catch {}
     }
     setSaving(false);

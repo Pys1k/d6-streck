@@ -26,7 +26,7 @@ export function Navbar() {
       const cached = localStorage.getItem("d6_sk");
       if (cached) setSk(JSON.parse(cached));
     } catch {}
-    fetch("/api/settings")
+    fetch("/api/settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         const next = {
